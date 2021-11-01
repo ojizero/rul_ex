@@ -134,13 +134,28 @@ defmodule Rulex.Builder do
     end
   end
 
-  # TODO: if type mismatch give error
-  def __evaluate_var_or_val__({:val, _type, value}, _db), do: {:ok, value}
-  # TODO: if nil or type mismatch give error
-  def __evaluate_var_or_val__({:var, _type, value}, db), do: {:ok, Rulex.DataBag.get(db, value)}
+  def __evaluate_var_or_val__({:val, type, value}, _db) do
+    if valid_value?(type, value),
+      do: {:ok, value},
+      else: {:error, "invalid value '#{inspect(value)}' given for type '#{type}'"}
+  end
 
-  def __evaluate_var_or_val__({:var_or, _type, value, default}, db),
-    do: {:ok, Rulex.DataBag.get(db, value, default)}
+  def __evaluate_var_or_val__({:var, type, variable}, db) do
+    value = Rulex.DataBag.get(db, variable)
+
+    if not is_nil(value) and valid_value?(type, value),
+      do: {:ok, value},
+      else: {:error, "invalid value '#{inspect(value)}' given for type '#{type}'"}
+  end
+
+  def __evaluate_var_or_val__({:var_or, type, variable, default}, db)
+      when not is_nil(default) do
+    value = Rulex.DataBag.get(db, variable, default)
+
+    if valid_value?(type, value),
+      do: {:ok, value},
+      else: {:error, "invalid value '#{inspect(value)}' given for type '#{type}'"}
+  end
 
   def __evaluate_var_or_val__(expr, _db)
       when is_tuple(expr) and elem(expr, 0) in [:val, :var, :var_or],
@@ -148,4 +163,20 @@ defmodule Rulex.Builder do
 
   def __evaluate_var_or_val__(expr, _db),
     do: {:error, "invalid `val`, `var`, or `var_or` expression (`#{inspect(expr)}`) provided"}
+
+  defp valid_value?("any", _value), do: true
+  defp valid_value?("number", value), do: is_number(value)
+  defp valid_value?("integer", value), do: is_integer(value)
+  defp valid_value?("float", value), do: is_float(value)
+  defp valid_value?("string", value), do: is_binary(value)
+  defp valid_value?("boolean", value), do: is_boolean(value)
+  defp valid_value?("list", value), do: is_list(value)
+  defp valid_value?("map", value), do: is_map(value)
+  defp valid_value?("time", value), do: match?({:ok, _time}, Time.from_iso8601(value))
+  defp valid_value?("date", value), do: match?({:ok, _date}, Date.from_iso8601(value))
+
+  defp valid_value?("datetime", value),
+    do: match?({:ok, _datetime}, NaiveDateTime.from_iso8601(value))
+
+  defp valid_value?(_unknown, _value), do: false
 end
