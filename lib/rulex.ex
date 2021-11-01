@@ -2,14 +2,17 @@ defmodule Rulex do
   @type op ::
           :|
           | :&
+          | :=
+          | :!=
           | :<
           | :>
           | :<=
           | :>=
           | :in
           # Data related operands
-          | :var
           | :val
+          | :var
+          | :var_or
           # TODO: those shouldn't be operands but inputs to the operands var and val
           # # Type related operands
           # | :string
