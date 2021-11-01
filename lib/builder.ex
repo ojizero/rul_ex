@@ -1,18 +1,19 @@
 defmodule Rulex.Builder do
-  import Rulex.Behaviour
+  import Rulex.Guards
 
   defmacro __using__(_opts) do
     quote do
-      import Rulex.Behaviour
+      import Rulex.Guards
 
       @behaviour Rulex.Behaviour
       @before_compile Rulex.Builder
 
       # TODO: from opts encoding module to use
+
       @impl Rulex.Behaviour
       def apply({:|, args}, databag)
           when is_list(args) do
-        Enum.reduce_while(args, {:ok, true}, fn arg ->
+        Enum.reduce_while(args, {:ok, true}, fn arg, acc ->
           if expr?(arg) do
             case apply(arg, databag) do
               {:error, reason} -> {:halt, {:error, reason}}
@@ -29,7 +30,7 @@ defmodule Rulex.Builder do
 
       def apply({:&, args}, databag)
           when is_list(args) do
-        Enum.reduce_while(args, {:ok, true}, fn arg ->
+        Enum.reduce_while(args, {:ok, true}, fn arg, acc ->
           if expr?(arg) do
             case apply(arg, databag) do
               {:error, reason} -> {:halt, {:error, reason}}
@@ -80,35 +81,18 @@ defmodule Rulex.Builder do
         }
       end
 
-      def apply({:<=, [_arg0, _arg1]}, _databag), do: {:ok, false}
+      def apply({:in, [needle, haystack]}, _databag)
+          when is_list(haystack),
+          do: {:ok, needle in haystack}
 
-      def apply({:<=, args}, _databag) do
+      def apply({:in, args}, _databag) do
         {
           :error,
-          "operand `<=` given invalid values #{inspect(args)} can only accept two arguments to compare"
+          "operand `in` given invalid values #{inspect(args)} can only accept list of two elements with the second being a list"
         }
       end
 
-      def apply({:>=, [_arg0, _arg1]}, _databag), do: {:ok, false}
-
-      def apply({:>=, args}, _databag) do
-        {
-          :error,
-          "operand `>=` given invalid values #{inspect(args)} can only accept two arguments to compare"
-        }
-      end
-
-      def apply({:in, [_arg0 | __args] = _args}, _databag), do: {:ok, false}
-      def apply({:in, _args}, _databag), do: {:error, "argument error"}
-
-      def apply({:var, [_type, _arg]}, _databag), do: {:error, "argument error"}
-      def apply({:val, [_type, _arg]}, _databag), do: {:error, "argument error"}
-
-      def apply({op, args}, databag) do
-        # if args is expr? rerun apply else run operand (custom)
-        operand(op, args, databag)
-        # {:error, "not implemented"}
-      end
+      def apply({op, args}, databag), do: operand(op, args, databag)
 
       @impl Rulex.Behaviour
       def apply!(expr, databag) do
@@ -126,7 +110,11 @@ defmodule Rulex.Builder do
       end
 
       @impl Rulex.Behaviour
-      def expr?(_any), do: false
+      def expr?({op, args})
+          when is_valid_operand(op) and is_list(args),
+          do: Enum.all?(args, &expr?/1)
+
+      def expr?(_invalid_expr), do: false
 
       @impl Rulex.Behaviour
       def operand(_op, _args, _databag)
