@@ -1,7 +1,5 @@
 defmodule Rulex.Guards do
-  @reserved_operands_atoms [:|, :&, :!, :=, :!=, :<, :>, :<=, :>=, :in, :val, :var, :var_or]
-  @reserved_operands @reserved_operands_atoms ++
-                       Enum.map(@reserved_operands_atoms, &Atom.to_string/1)
+  @reserved_operands Rulex.Operands.reserved()
 
   defguard is_val(expr)
            when is_list(expr) and

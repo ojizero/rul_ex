@@ -27,6 +27,7 @@ end
 
 defmodule Rulex.Encoding.Json do
   import Rulex.Builder, only: [expr?: 1]
+  import Rulex.Guards, only: [is_val_or_var: 1]
 
   alias Rulex.{EncodeError, DecodeError}
 
@@ -56,7 +57,7 @@ defmodule Rulex.Encoding.Json do
   def decode(maybe_encoded_expr) do
     with {:ok, maybe_expr} <- encoder().decode(maybe_encoded_expr),
          true <- expr?(maybe_expr) do
-      {:ok, maybe_expr}
+      {:ok, atomize_reserved_operands(maybe_expr)}
     else
       false -> {:error, "decoded an invalid expression"}
       reason -> reason
@@ -75,8 +76,23 @@ defmodule Rulex.Encoding.Json do
         decoder: encoder()
     end
 
-    maybe_expr
+    atomize_reserved_operands(maybe_expr)
   end
 
   defp encoder, do: Application.get_env(:rulex, __MODULE__, encoder: Jason)[:encoder]
+
+  defp atomize_reserved_operands([op | exprs] = expr)
+       when is_val_or_var(expr) do
+    op = Rulex.Operands.rename(op)
+
+    [op | exprs]
+  end
+
+  defp atomize_reserved_operands([op | exprs]) do
+    op = Rulex.Operands.rename(op)
+
+    exprs = Enum.map(exprs, &atomize_reserved_operands/1)
+
+    [op | exprs]
+  end
 end
