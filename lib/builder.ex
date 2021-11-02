@@ -1,17 +1,21 @@
 defmodule Rulex.Builder do
+  @moduledoc false
+
   import Rulex.Guards
 
+  @doc false
   defmacro __using__(_opts) do
     quote do
       import Rulex.Guards
 
       @behaviour Rulex.Behaviour
+      # @behaviour Rulex.Encoding
       @before_compile Rulex.Builder
 
       @impl Rulex.Behaviour
-      def eval(expr, db)
+      def eval(expr, _db)
           when is_val_or_var(expr),
-          do: {:error, "cannot evaluate `#{elem(expr, 0)}` operand"}
+          do: {:error, "cannot evaluate `#{hd(expr)}` operand"}
 
       def eval([:| | exprs], db) do
         Enum.any?(exprs, Rulex.Builder.__expr_evaluator__(__MODULE__, db))
@@ -98,7 +102,7 @@ defmodule Rulex.Builder do
           when not is_reserved_operand(op),
           do: operand(op, args, db)
 
-      def eval(invalid_expr, _db), do: {:error, "invalid expression given"}
+      def eval(_invalid_expr, _db), do: {:error, "invalid expression given"}
 
       @impl Rulex.Behaviour
       def eval!(expr, db) do
@@ -123,7 +127,7 @@ defmodule Rulex.Builder do
           when is_val_or_var(expr),
           do: Rulex.Builder.__evaluate_val_or_var__(expr, db)
 
-      def value(expr, db),
+      def value(expr, _db),
         do: {:error, "cannot extract value with `#{elem(expr, 0)}` operand"}
 
       @impl Rulex.Behaviour
@@ -142,12 +146,13 @@ defmodule Rulex.Builder do
       end
 
       @impl Rulex.Behaviour
-      def operand(_op, _args, _db)
+      def operand(op, args, db)
 
       defoverridable operand: 3
     end
   end
 
+  @doc false
   defmacro __before_compile__(_env) do
     quote do
       # Catchall operand call to reject with an error any undefined operands
@@ -155,6 +160,7 @@ defmodule Rulex.Builder do
     end
   end
 
+  @doc false
   def expr?(expr) when is_val_or_var(expr), do: true
 
   def expr?([op | args])
@@ -163,6 +169,7 @@ defmodule Rulex.Builder do
 
   def expr?(_invalid_expr), do: false
 
+  @doc false
   defmacro __expr_evaluator__(mod, db) do
     quote do
       fn expr ->
@@ -177,6 +184,7 @@ defmodule Rulex.Builder do
     end
   end
 
+  @doc false
   def __evaluate_val_or_var__([:val, type, value], _db) do
     if valid_value?(type, value),
       do: {:ok, value},

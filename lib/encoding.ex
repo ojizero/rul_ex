@@ -1,8 +1,28 @@
 defmodule Rulex.Encoding do
+  @moduledoc """
+
+  """
+
+  @doc """
+
+  """
   @callback encode(Rulex.t()) :: {:ok, any} | {:error, term}
+
+  @doc "Exactly identical to `Rulex.Encoding.encode/1` but raises `Rulex.EncodeError` in case of errors."
   @callback encode!(Rulex.t()) :: any | no_return
+
+  @doc """
+
+  """
   @callback decode(any) :: {:ok, Rulex.t()} | {:error, term}
+
+  @doc "Exactly identical to `Rulex.Encoding.decode/1` but raises `Rulex.DecodeError` in case of errors."
   @callback decode!(any) :: Rulex.t() | no_return
+
+  defmacro __using__(_opts) do
+    quote do
+    end
+  end
 end
 
 defmodule Rulex.Encoding.Json do
