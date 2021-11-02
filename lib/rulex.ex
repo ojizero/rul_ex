@@ -2,6 +2,7 @@ defmodule Rulex do
   @type op ::
           :|
           | :&
+          | :!
           | :=
           | :!=
           | :<

@@ -11,7 +11,8 @@ defmodule Rulex.Guards do
 
   defguard is_val_or_var(expr) when is_val(expr) or is_var(expr)
 
-  defguard is_valid_operand(op)
-           when op in [:|, :&, :=, :!=, :<, :>, :<=, :>=, :in, :val, :var, :var_or] or
-                  is_binary(op)
+  defguard is_reserved_operand(op)
+           when op in [:|, :&, :!, :=, :!=, :<, :>, :<=, :>=, :in, :val, :var, :var_or]
+
+  defguard is_valid_operand(op) when is_reserved_operand(op) or is_binary(op)
 end

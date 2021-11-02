@@ -8,7 +8,7 @@ defmodule Rulex.Builder do
       @behaviour Rulex.Behaviour
       @before_compile Rulex.Builder
 
-      # TODO: from opts encoding module to use
+      # TODO: from opts encoding module to use?
 
       @impl Rulex.Behaviour
       def apply({:|, exprs}, db) when is_list(exprs) do
@@ -63,7 +63,7 @@ defmodule Rulex.Builder do
           when op in [:<, :<=, :>, :>=, :=, :!=] do
         {
           :error,
-          "operand `#{op}` given invalid values #{inspect(args)} can only accept two arguments to compare"
+          "operand `#{op}` given invalid values `#{inspect(args)}` can only accept two arguments (given as a list of two elements) to compare"
         }
       end
 
@@ -74,11 +74,21 @@ defmodule Rulex.Builder do
       def apply({:in, args}, _db) do
         {
           :error,
-          "operand `in` given invalid values #{inspect(args)} can only accept list of two elements with the second being a list"
+          "operand `in` given invalid values `#{inspect(args)}` can only accept list of two elements with the second being a list"
         }
       end
 
-      def apply({op, args}, db), do: operand(op, args, db)
+      def apply({:!, [expr]}, db) do
+        with {:ok, result} <- __MODULE__.apply(expr, db),
+             do: {:ok, not result}
+      end
+
+      def apply({:!, _args}, db) do
+        {:error, ""}
+      end
+
+      def apply({op, args}, db) when not is_reserved_operand(op),
+        do: __MODULE__.operand(op, args, db)
 
       @impl Rulex.Behaviour
       def apply!(expr, db) do
