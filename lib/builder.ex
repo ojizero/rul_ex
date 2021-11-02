@@ -37,8 +37,8 @@ defmodule Rulex.Builder do
           when op in [:<, :<=, :>, :>=, :=, :!=] and
                  is_val_or_var(expr0) and
                  is_val_or_var(expr1) do
-        with t0 = elem(expr0, 1),
-             t1 = elem(expr1, 1),
+        with t0 = expr0 |> elem(1) |> hd(),
+             t1 = expr1 |> elem(1) |> hd(),
              true <- t0 == t1,
              {:ok, v0} <- Rulex.Builder.__evaluate_val_or_var__(expr0, db),
              {:ok, v1} <- Rulex.Builder.__evaluate_val_or_var__(expr1, db) do
