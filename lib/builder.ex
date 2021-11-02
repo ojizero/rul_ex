@@ -116,13 +116,7 @@ defmodule Rulex.Builder do
       end
 
       @impl Rulex.Behaviour
-      def expr?(expr) when is_val_or_var(expr), do: true
-
-      def expr?([op | args])
-          when is_valid_operand(op) and is_list(args),
-          do: Enum.all?(args, &expr?/1)
-
-      def expr?(_invalid_expr), do: false
+      defdelegate expr?(expr), to: Rulex.Builder
 
       @impl Rulex.Behaviour
       def value(expr, db)
@@ -160,6 +154,14 @@ defmodule Rulex.Builder do
       def operand(op, _args, _db), do: {:error, "unsupported operand '#{op}' provided"}
     end
   end
+
+  def expr?(expr) when is_val_or_var(expr), do: true
+
+  def expr?([op | args])
+      when is_valid_operand(op) and is_list(args),
+      do: Enum.all?(args, &expr?/1)
+
+  def expr?(_invalid_expr), do: false
 
   defmacro __expr_evaluator__(mod, db) do
     quote do

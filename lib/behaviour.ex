@@ -9,6 +9,8 @@ defmodule Rulex.Behaviour do
 
   @callback operand(String.t(), Rulex.arg(), Rulex.DataBag.t()) :: {:ok, boolean} | {:error, term}
 
-  # TODO: encoding and decoding modules here?
-  # TODO: add extensibility to types
+  # @callback encode(Rulex.t()) :: {:ok, any} | {:error, term}
+  # @callback encode!(Rulex.t()) :: any | no_return
+  # @callback decode(any) :: {:ok, Rulex.t()} | {:error, term}
+  # @callback decode!(any) :: Rulex.t() | no_return
 end
