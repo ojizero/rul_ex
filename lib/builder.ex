@@ -8,15 +8,12 @@ defmodule Rulex.Builder do
       @behaviour Rulex.Behaviour
       @before_compile Rulex.Builder
 
-      # TODO: from opts encoding module to use?
-
       @impl Rulex.Behaviour
       def eval(expr, db)
           when is_val_or_var(expr),
           do: {:error, "cannot evaluate `#{elem(expr, 0)}` operand"}
 
-      def eval({:|, exprs}, db)
-          when is_list(exprs) do
+      def eval([:| | exprs], db) do
         Enum.any?(exprs, Rulex.Builder.__expr_evaluator__(__MODULE__, db))
       catch
         reason -> {:error, reason}
@@ -24,11 +21,7 @@ defmodule Rulex.Builder do
         result -> {:ok, result}
       end
 
-      def eval({:|, args}, _db),
-        do: {:error, "non list arguments #{inspect(args)} provided to `|` operand"}
-
-      def eval({:&, exprs}, db)
-          when is_list(exprs) do
+      def eval([:& | exprs], db) do
         Enum.all?(exprs, Rulex.Builder.__expr_evaluator__(__MODULE__, db))
       catch
         reason -> {:error, reason}
@@ -36,15 +29,12 @@ defmodule Rulex.Builder do
         result -> {:ok, result}
       end
 
-      def eval({:&, args}, _db),
-        do: {:error, "non list arguments #{inspect(Args)} provided to `&` operand"}
-
-      def eval({op, [expr0, expr1]}, db)
+      def eval([op, expr0, expr1], db)
           when op in [:<, :<=, :>, :>=, :=, :!=] and
                  is_val_or_var(expr0) and
                  is_val_or_var(expr1) do
-        with t0 = expr0 |> elem(1) |> hd(),
-             t1 = expr1 |> elem(1) |> hd(),
+        with t0 = Enum.at(expr0, 1),
+             t1 = Enum.at(expr1, 1),
              true <- t0 == t1,
              {:ok, v0} <- value(expr0, db),
              {:ok, v1} <- value(expr1, db) do
@@ -65,42 +55,50 @@ defmodule Rulex.Builder do
         end
       end
 
-      def eval({op, args}, _db)
+      def eval([op | args], _db)
           when op in [:<, :<=, :>, :>=, :=, :!=] do
         {
           :error,
-          "operand `#{op}` given invalid values `#{inspect(args)}` can only accept two arguments (given as a list of two elements) to compare"
+          "operand `#{op}` given invalid values `#{inspect(args)}` can only accept two arguments to compare"
         }
       end
 
-      def eval({:in, [needle, haystack]}, db)
+      def eval([:in, needle, haystack], db)
           when is_val_or_var(needle) and
                  is_list(haystack) do
         with {:ok, needle} <- value(needle, db),
              do: {:ok, needle in haystack}
       end
 
-      def eval({:in, args}, _db) do
+      def eval([:in | args], _db) do
         {
           :error,
           "operand `in` given invalid values `#{inspect(args)}` can only accept list of two elements with the first one being a `val` or `var` expression and the second being a list"
         }
       end
 
-      def eval({:!, [expr]}, db) do
+      def eval([:!, expr], db) do
         with {:ok, result} <- eval(expr, db),
              do: {:ok, not result}
       end
 
-      def eval({:!, args}, _db) do
+      def eval([:! | args], _db) do
         {
           :error,
-          "operand `!` given in valid values `#{inspect(args)}` can only accept a single expression (given as a list of one item) to negate"
+          "operand `!` given in valid values `#{inspect(args)}` can only accept a single expression to negate"
         }
       end
 
-      def eval({op, args}, db) when not is_reserved_operand(op),
-        do: operand(op, args, db)
+      def eval([op | args], db)
+          when is_reserved_operand(op) and
+                 is_binary(op),
+          do: eval([String.to_existing_atom(op) | args], db)
+
+      def eval([op | args], db)
+          when not is_reserved_operand(op),
+          do: operand(op, args, db)
+
+      def eval(invalid_expr, _db), do: {:error, "invalid expression given"}
 
       @impl Rulex.Behaviour
       def eval!(expr, db) do
@@ -120,7 +118,7 @@ defmodule Rulex.Builder do
       @impl Rulex.Behaviour
       def expr?(expr) when is_val_or_var(expr), do: true
 
-      def expr?({op, args})
+      def expr?([op | args])
           when is_valid_operand(op) and is_list(args),
           do: Enum.all?(args, &expr?/1)
 
@@ -177,13 +175,13 @@ defmodule Rulex.Builder do
     end
   end
 
-  def __evaluate_val_or_var__({:val, [type, value]}, _db) do
+  def __evaluate_val_or_var__([:val, type, value], _db) do
     if valid_value?(type, value),
       do: {:ok, value},
       else: {:error, "invalid value '#{inspect(value)}' given for type '#{type}'"}
   end
 
-  def __evaluate_val_or_var__({:var, [type, variable]}, db) do
+  def __evaluate_val_or_var__([:var, type, variable], db) do
     value = Rulex.DataBag.get(db, variable)
 
     if not is_nil(value) and valid_value?(type, value),
@@ -191,7 +189,7 @@ defmodule Rulex.Builder do
       else: {:error, "invalid value '#{inspect(value)}' given for type '#{type}'"}
   end
 
-  def __evaluate_val_or_var__({:var, [type, variable, default]}, db) do
+  def __evaluate_val_or_var__([:var, type, variable, default], db) do
     value = Rulex.DataBag.get(db, variable, default)
 
     if not is_nil(value) and valid_value?(type, value),
@@ -199,14 +197,14 @@ defmodule Rulex.Builder do
       else: {:error, "invalid value '#{inspect(value)}' given for type '#{type}'"}
   end
 
-  def __evaluate_val_or_var__({:val, args}, _db) do
+  def __evaluate_val_or_var__([:val | args], _db) do
     {
       :error,
       "invalid `val` arguments (`#{inspect(args)}`) provided can only accept two arguments (given as list of two elements) with the first one a supported type"
     }
   end
 
-  def __evaluate_val_or_var__({:var, args}, _db) do
+  def __evaluate_val_or_var__([:var | args], _db) do
     {
       :error,
       "invalid `val` arguments (`#{inspect(args)}`) provided can only accept two or three arguments (given as list of two elements) with the first one a supported type"
