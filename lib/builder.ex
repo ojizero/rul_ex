@@ -11,7 +11,12 @@ defmodule Rulex.Builder do
       # TODO: from opts encoding module to use?
 
       @impl Rulex.Behaviour
-      def apply({:|, exprs}, db) when is_list(exprs) do
+      def eval(expr, db)
+          when is_val_or_var(expr),
+          do: {:error, "cannot evaluate `#{elem(expr, 0)}` operand"}
+
+      def eval({:|, exprs}, db)
+          when is_list(exprs) do
         Enum.any?(exprs, Rulex.Builder.__expr_evaluator__(__MODULE__, db))
       catch
         reason -> {:error, reason}
@@ -19,10 +24,11 @@ defmodule Rulex.Builder do
         result -> {:ok, result}
       end
 
-      def apply({:|, args}, _db),
+      def eval({:|, args}, _db),
         do: {:error, "non list arguments #{inspect(args)} provided to `|` operand"}
 
-      def apply({:&, exprs}, db) when is_list(exprs) do
+      def eval({:&, exprs}, db)
+          when is_list(exprs) do
         Enum.all?(exprs, Rulex.Builder.__expr_evaluator__(__MODULE__, db))
       catch
         reason -> {:error, reason}
@@ -30,18 +36,18 @@ defmodule Rulex.Builder do
         result -> {:ok, result}
       end
 
-      def apply({:&, args}, _db),
+      def eval({:&, args}, _db),
         do: {:error, "non list arguments #{inspect(Args)} provided to `&` operand"}
 
-      def apply({op, [expr0, expr1]}, db)
+      def eval({op, [expr0, expr1]}, db)
           when op in [:<, :<=, :>, :>=, :=, :!=] and
                  is_val_or_var(expr0) and
                  is_val_or_var(expr1) do
         with t0 = expr0 |> elem(1) |> hd(),
              t1 = expr1 |> elem(1) |> hd(),
              true <- t0 == t1,
-             {:ok, v0} <- Rulex.Builder.__evaluate_val_or_var__(expr0, db),
-             {:ok, v1} <- Rulex.Builder.__evaluate_val_or_var__(expr1, db) do
+             {:ok, v0} <- value(expr0, db),
+             {:ok, v1} <- value(expr1, db) do
           op =
             case op do
               :< -> &Kernel.</2
@@ -59,7 +65,7 @@ defmodule Rulex.Builder do
         end
       end
 
-      def apply({op, args}, _db)
+      def eval({op, args}, _db)
           when op in [:<, :<=, :>, :>=, :=, :!=] do
         {
           :error,
@@ -67,43 +73,44 @@ defmodule Rulex.Builder do
         }
       end
 
-      def apply({:in, [needle, haystack]}, db)
-          when is_val_or_var(needle) and is_list(haystack) do
-        with {:ok, needle} <- Rulex.Builder.__evaluate_val_or_var__(needle, db),
+      def eval({:in, [needle, haystack]}, db)
+          when is_val_or_var(needle) and
+                 is_list(haystack) do
+        with {:ok, needle} <- value(needle, db),
              do: {:ok, needle in haystack}
       end
 
-      def apply({:in, args}, _db) do
+      def eval({:in, args}, _db) do
         {
           :error,
           "operand `in` given invalid values `#{inspect(args)}` can only accept list of two elements with the first one being a `val` or `var` expression and the second being a list"
         }
       end
 
-      def apply({:!, [expr]}, db) do
-        with {:ok, result} <- __MODULE__.apply(expr, db),
+      def eval({:!, [expr]}, db) do
+        with {:ok, result} <- eval(expr, db),
              do: {:ok, not result}
       end
 
-      def apply({:!, args}, _db) do
+      def eval({:!, args}, _db) do
         {
           :error,
           "operand `!` given in valid values `#{inspect(args)}` can only accept a single expression (given as a list of one item) to negate"
         }
       end
 
-      def apply({op, args}, db) when not is_reserved_operand(op),
-        do: __MODULE__.operand(op, args, db)
+      def eval({op, args}, db) when not is_reserved_operand(op),
+        do: operand(op, args, db)
 
       @impl Rulex.Behaviour
-      def apply!(expr, db) do
-        case __MODULE__.apply(expr, db) do
+      def eval!(expr, db) do
+        case eval(expr, db) do
           {:ok, evaluation} ->
             evaluation
 
           {:error, reason} ->
-            raise Rulex.ApplyError,
-              message: "failed to complete expression application",
+            raise Rulex.EvalError,
+              message: "failed to evaluate expression `#{inspect(expr)}`",
               reason: reason,
               facts: db,
               expr: expr
@@ -118,6 +125,29 @@ defmodule Rulex.Builder do
           do: Enum.all?(args, &expr?/1)
 
       def expr?(_invalid_expr), do: false
+
+      @impl Rulex.Behaviour
+      def value(expr, db)
+          when is_val_or_var(expr),
+          do: Rulex.Builder.__evaluate_val_or_var__(expr, db)
+
+      def value(expr, db),
+        do: {:error, "cannot extract value with `#{elem(expr, 0)}` operand"}
+
+      @impl Rulex.Behaviour
+      def value!(expr, db) do
+        case value(expr, db) do
+          {:ok, result} ->
+            result
+
+          {:error, reason} ->
+            raise Rulex.EvalError,
+              message: "failed to evaluate value expression `#{inspect(expr)}`",
+              reason: reason,
+              facts: db,
+              expr: expr
+        end
+      end
 
       @impl Rulex.Behaviour
       def operand(_op, _args, _db)
@@ -137,7 +167,7 @@ defmodule Rulex.Builder do
     quote do
       fn expr ->
         with true <- unquote(mod).expr?(expr),
-             {:ok, result} <- unquote(mod).apply(expr, unquote(db)) do
+             {:ok, result} <- unquote(mod).eval(expr, unquote(db)) do
           result
         else
           false -> throw("non expressions provided")

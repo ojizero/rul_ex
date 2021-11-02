@@ -20,7 +20,7 @@ defmodule Rulex do
   @type expr :: {op, arg | [arg | expr]}
   @type t :: expr
 
-  defmodule ApplyError do
+  defmodule EvalError do
     defexception [:message, :reason, :expr, :facts]
   end
 
