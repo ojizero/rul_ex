@@ -11,8 +11,6 @@ defmodule Rulex.Builder do
       # TODO: from opts encoding module to use
 
       @impl Rulex.Behaviour
-      def apply({:|, []}, db), do: {:ok, true}
-
       def apply({:|, exprs}, db) when is_list(exprs) do
         Enum.any?(exprs, Rulex.Builder.__expr_evaluator__(__MODULE__, db))
       catch
