@@ -3,19 +3,12 @@ defmodule Rulex.Encoding do
   @callback encode!(Rulex.t()) :: any | no_return
   @callback decode(any) :: {:ok, Rulex.t()} | {:error, term}
   @callback decode!(any) :: Rulex.t() | no_return
-
-  defmodule EncodeError do
-    defexception [:message, :given]
-  end
-
-  defmodule DecodeError do
-    defexception [:message, :raw, :decoded, :decoder]
-  end
 end
 
 defmodule Rulex.Encoding.Json do
   import Rulex.Builder, only: [expr?: 1]
-  alias Rulex.Encoding.{EncodeError, DecodeError}
+
+  alias Rulex.{EncodeError, DecodeError}
 
   @behaviour Rulex.Encoding
 
