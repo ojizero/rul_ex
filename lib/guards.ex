@@ -1,4 +1,6 @@
 defmodule Rulex.Guards do
+  @moduledoc "Provide helper guards for use with Rulex."
+
   @reserved_operands Rulex.Operands.reserved()
 
   defguard is_val(expr)
