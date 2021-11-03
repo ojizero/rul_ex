@@ -11,6 +11,7 @@ defmodule Rulex.Builder do
       @behaviour Rulex.Behaviour
       @before_compile Rulex.Builder
 
+      @doc "Default implementation for `Rulex.Behaviour.eval/2`."
       @impl Rulex.Behaviour
       def eval(expr, db)
           when is_val_or_var(expr) do
@@ -105,6 +106,7 @@ defmodule Rulex.Builder do
 
       def eval(_invalid_expr, _db), do: {:error, "invalid expression given"}
 
+      @doc "Default implementation for `Rulex.Behaviour.eval!/2`."
       @impl Rulex.Behaviour
       def eval!(expr, db) do
         case eval(expr, db) do
@@ -120,9 +122,11 @@ defmodule Rulex.Builder do
         end
       end
 
+      @doc "Default implementation for `Rulex.Behaviour.expr?/1`."
       @impl Rulex.Behaviour
       defdelegate expr?(expr), to: Rulex.Builder
 
+      @doc "Default implementation for `Rulex.Behaviour.value/2`."
       @impl Rulex.Behaviour
       def value(expr, db)
           when is_val_or_var(expr),
@@ -131,6 +135,7 @@ defmodule Rulex.Builder do
       def value(expr, _db),
         do: {:error, "cannot extract value with `#{elem(expr, 0)}` operand"}
 
+      @doc "Default implementation for `Rulex.Behaviour.value!/2`."
       @impl Rulex.Behaviour
       def value!(expr, db) do
         case value(expr, db) do
@@ -146,6 +151,7 @@ defmodule Rulex.Builder do
         end
       end
 
+      @doc "Default implementation for `Rulex.Behaviour.operand/3`."
       @impl Rulex.Behaviour
       def operand(op, args, db)
 

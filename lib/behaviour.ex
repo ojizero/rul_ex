@@ -86,6 +86,13 @@ defmodule Rulex.Behaviour do
 
   ## Examples
 
+      iex> # Success cases
+      iex> truthy_expression = [:=, [:val, "string", "hello"], [:var, "string", "what?"]]
+      iex> falsy_expression = [:=, [:val, "string", "hello"], [:val, "string", "world"]]
+      iex> {:ok, true} = eval(truthy_expression, %{"what?" => "hello"})
+      iex> {:ok, false} = eval(falsy_expression, %{"what?" => "hello"})
+      iex> invalid_expression = []
+      iex> {:error, _reason} = eval(invalid_expression, %{})
   """
   @callback eval(Rulex.t(), Rulex.DataBag.t()) :: {:ok, boolean} | {:error, term}
 
@@ -97,6 +104,10 @@ defmodule Rulex.Behaviour do
 
   ## Examples
 
+      iex> correct_expression = [:=, [:val, "string", "hello"], [:var, "string", "what?"]]
+      iex> incorrect_expression = []
+      iex> true = expr?(correct_expression)
+      iex> false = expr?(incorrect_expression)
   """
   @callback expr?(any) :: boolean
 
@@ -109,8 +120,24 @@ defmodule Rulex.Behaviour do
   This function **will** return an error if the given any expression **except** those of
   the operands `:val` or `:var`.
 
+  If the resolved value does not match the type specified in the expression this function
+  will yield back an error. If given a `:var` expression, this function *should*
+  yield back an error if the databag doesn't hold a value for the requested
+  variable.
+
+  This function will yield an error if given any expression that isn't a Rulex `:var` or
+  `:var` expression, regardless of its correctness as a Rulex expression.
+
   ## Examples
 
+      iex> # Success cases
+      iex> val_expression = [:val, "string", "foo"]
+      iex> var_expression = [:var, "string", "x"]
+      iex> {:ok, "foo"} = value(val_expression, %{})
+      iex> {:ok, 10} = value(var_expression, %{"x" => 10})
+      iex> # Error cases
+      iex> {:error, _reason} = value(var_expression, %{})
+      iex> {:error, _reason} = value([], %{})
   """
   @callback value({:var | :val, [Rulex.arg()]}, Rulex.DataBag.t()) :: {:ok, any} | {:error, term}
 
@@ -122,9 +149,6 @@ defmodule Rulex.Behaviour do
 
   This function will never execute for any of the Rulex reserved operands, as defined
   by the type `Rulex.op`.
-
-  ## Examples
-
   """
   @callback operand(String.t(), Rulex.arg(), Rulex.DataBag.t()) :: {:ok, boolean} | {:error, term}
 

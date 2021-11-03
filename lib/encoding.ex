@@ -26,6 +26,11 @@ defmodule Rulex.Encoding do
 
   ## Examples
 
+      iex> # Assuming the use of a JSON encoder
+      iex> expression = [:|,[:>, [:val, "number", 10], [:var, "number", "x"]],[:=, [:val, "any", 10], [:var, "any", "x"]]]
+      iex> encoded = "[\\"|\\",[\\">\\",[\\"val\\",\\"number\\",10],[\\"var\\",\\"number\\",\\"x\\"]],[\\"=\\",[\\"val\\",\\"any\\",10],[\\"var\\",\\"any\\",\\"x\\"]]]"
+      iex> {:ok, ^encoded} = encode(expression)
+      iex> {:error, _reason} = encode([])
   """
   @callback encode(Rulex.t()) :: {:ok, any} | {:error, term}
 
@@ -39,6 +44,11 @@ defmodule Rulex.Encoding do
 
   ## Examples
 
+      iex> # Assuming the use of a JSON encoder
+      iex> encoded = "[\\"|\\",[\\">\\",[\\"val\\",\\"number\\",10],[\\"var\\",\\"number\\",\\"x\\"]],[\\"=\\",[\\"val\\",\\"any\\",10],[\\"var\\",\\"any\\",\\"x\\"]]]"
+      iex> expression = [:|,[:>, [:val, "number", 10], [:var, "number", "x"]],[:=, [:val, "any", 10], [:var, "any", "x"]]]
+      iex> {:ok, ^expression} = decode(encoded)
+      iex> {:error, _reason} = decode("[]")
   """
   @callback decode(any) :: {:ok, Rulex.t()} | {:error, term}
 
@@ -56,7 +66,7 @@ defmodule Rulex.Encoding do
       @behaviour Rulex.Encoding
 
       @doc """
-      Default implementation for `Rulex.Behaviour.encode/1`.
+      Default implementation for `Rulex.Encoding.encode/1`.
 
       Further more, this will return an error if the provider expression
       is not a valid Rulex expression.
@@ -71,7 +81,7 @@ defmodule Rulex.Encoding do
       end
 
       @doc """
-      Default implementation for `Rulex.Behaviour.encode!/1`.
+      Default implementation for `Rulex.Encoding.encode!/1`.
 
       Further more, this will return an error if the provider expression
       is not a valid Rulex expression.
@@ -88,7 +98,7 @@ defmodule Rulex.Encoding do
       end
 
       @doc """
-      Default implementation for `Rulex.Behaviour.decode/1`.
+      Default implementation for `Rulex.Encoding.decode/1`.
 
       Further more, this will return an error if the provider expression
       is not a valid Rulex expression.
@@ -104,6 +114,12 @@ defmodule Rulex.Encoding do
         end
       end
 
+      @doc """
+      Default implementation for `Rulex.Encoding.decode!/1`.
+
+      Further more, this will return an error if the provider expression
+      is not a valid Rulex expression.
+      """
       @impl Rulex.Encoding
       def decode!(maybe_encoded_expr) do
         case decode(maybe_encoded_expr) do
