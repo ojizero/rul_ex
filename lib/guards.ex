@@ -19,4 +19,8 @@ defmodule Rulex.Guards do
            when op in @reserved_operands
 
   defguard is_valid_operand(op) when is_reserved_operand(op) or is_binary(op)
+
+  defguard is_truthy(value) when value not in [false, nil]
+
+  defguard is_falsy(value) when not is_truthy(value)
 end

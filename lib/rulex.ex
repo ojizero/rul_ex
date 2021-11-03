@@ -20,9 +20,9 @@ defmodule Rulex do
           # Data related operands
           | :val
           | :var
-          | :var_or
           # Any custom user defined operands, anything before this is reserved by Rulex
           | String.t()
+
   @typedoc """
 
   """

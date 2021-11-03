@@ -4,6 +4,11 @@ defprotocol Rulex.DataBag do
 
   ## Examples
 
+      defimpl Rulex.DataBag, for: Keyword do
+        def get(kw, key, default \\\\ nil) do
+          Keyword.get(kw, key, default)
+        end
+      end
   """
   @spec get(t, any) :: any
   @spec get(t, any, any) :: any

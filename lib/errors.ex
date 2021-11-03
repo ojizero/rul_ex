@@ -7,5 +7,5 @@ defmodule Rulex.EncodeError do
 end
 
 defmodule Rulex.DecodeError do
-  defexception [:message, :raw, :decoded, :decoder]
+  defexception [:message, :raw, :decoder]
 end

@@ -9,13 +9,14 @@ defmodule Rulex.Builder do
       import Rulex.Guards
 
       @behaviour Rulex.Behaviour
-      # @behaviour Rulex.Encoding
       @before_compile Rulex.Builder
 
       @impl Rulex.Behaviour
-      def eval(expr, _db)
-          when is_val_or_var(expr),
-          do: {:error, "cannot evaluate `#{hd(expr)}` operand"}
+      def eval(expr, db)
+          when is_val_or_var(expr) do
+        with {:ok, value} <- value(expr, db),
+             do: is_truthy(value)
+      end
 
       def eval([:| | exprs], db) do
         Enum.any?(exprs, Rulex.Builder.__expr_evaluator__(__MODULE__, db))

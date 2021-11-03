@@ -3,6 +3,9 @@ defmodule Rulex.Behaviour do
   This is the main behaviour describing Rulex and all the available callbacks
   and functions needed to fully implement rules evaluation.
 
+  Optionally, using `Rulex.Behaviour` to generate your custom Rulex module can
+  also implement the `Rulex.Encoding` behaviour.
+
   ## Usage
 
   A custom Rulex module can be defined by simply using `Rulex.Behaviour`
@@ -16,11 +19,59 @@ defmodule Rulex.Behaviour do
 
   ### Extending Rulex operands
 
+  Rulex behaviour provides the ability to extend it's supported operands arbitrarily
+  via the `operand/3` callback, by default this will yield an error for all non
+  reserved operands as defined by the type `Rulex.op`.
 
+      defmodule MyApp.CustomRules do
+        use Rulex.Behaviour
+
+        # Here we're matching against our custom operand name
+        # afterwards we assert that the single expression
+        # given to us will yield `nil`.
+        #
+        # A catchall operand for all non-implemented operands
+        # exists and will yield back an error.
+        #
+        def operand("nil?", [arg], db) do
+          with value <- value(arg, db),
+               do: {:ok, is_nil(value)}
+        end
+      end
 
   ### Defining a default encoding mechanism
 
+  Rulex behaviour optionally allows you to provide a custom encoding mechanism
+  to translate Rulex expression into whatever encoding you want/need.
 
+  This is achieve by either setting the application environment to define a config
+  for under `Rulex.Behaviour` key with a keyword list with `:default` key set
+  to the encoding module (implementing the behaviour `Rulex.Encoding`).
+
+      # In your `config/config.exs`
+      config :rulex, Rulex.Behaviour, default: MyApp.Rulex.Encoder
+
+  Further more, when defining the module you can pass `encoder` option when using
+  this behaviour as such.
+
+      defmodule MyApp.CustomRules do
+        use Rulex.Behaviour, encoder: MyApp.Rulex.Encoder
+      end
+
+  Do note that passing the `:encoder` option overrides any application configurations
+  set in the environment.
+
+  You can disable the encoder behaviour all together by passing the option
+  `:without_encoder` when using this behaviour, as such.
+
+      defmodule MyApp.CustomRules do
+        use Rulex.Behaviour, :without_encoder
+      end
+
+  > If no explicit encoding mechanism is provided, an the option `:without_encoder`
+  > isn't passed, then using this behaviour to build your custom Rulex module
+  > will use `Rulex.Encoding.Json` as an encoder to implement the
+  > `Rulex.Encoding` behaviour.
   """
 
   @doc """

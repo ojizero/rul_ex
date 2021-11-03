@@ -1,9 +1,30 @@
 defmodule Rulex.Encoding do
   @moduledoc """
+  This behaviour defines how to translate Rulex expressions into any
+  encoding formats your application may want/need, e.g. converting
+  them into JSON values.
 
+  This is useful when you want to store Rulex expressions into database
+  and/or if you want to transfer the rules over the wire to other
+  services/systems that may need it.
+
+  ## Usage
+
+  A custom Rulex encoding mechanism can be defined by simply using `Rulex.Encoding`
+
+      defmodule MyApp.Rulex.Encoder do
+        use Rulex.Encoding
+
+        def __encoder__, do: CustomModule
+      end
   """
 
   @doc """
+  Given a Rulex expression, encode it into any parsable value. This function will
+  yield an error if given an invalid value in place of the Rulex expression,
+  or if it fails to encode the provided expression.
+
+  ## Examples
 
   """
   @callback encode(Rulex.t()) :: {:ok, any} | {:error, term}
@@ -12,6 +33,11 @@ defmodule Rulex.Encoding do
   @callback encode!(Rulex.t()) :: any | no_return
 
   @doc """
+  Given an encoded Rulex expression, decode it back into a Rulex expression.
+  This function will yield an error if decoded value is an invalid Rulex
+  expression, or if it fails to decode the provided value.
+
+  ## Examples
 
   """
   @callback decode(any) :: {:ok, Rulex.t()} | {:error, term}
@@ -19,80 +45,105 @@ defmodule Rulex.Encoding do
   @doc "Exactly identical to `Rulex.Encoding.decode/1` but raises `Rulex.DecodeError` in case of errors."
   @callback decode!(any) :: Rulex.t() | no_return
 
-  defmacro __using__(_opts) do
+  defmacro __using__(opts) do
+    encoder = Keyword.get(opts, :encoder, Rulex.Encoding.Json)
+
     quote do
+      alias Rulex.{EncodeError, DecodeError}
+
+      require Rulex.Guards
+
+      @behaviour Rulex.Encoding
+
+      @doc """
+      Default implementation for `Rulex.Behaviour.encode/1`.
+
+      Further more, this will return an error if the provider expression
+      is not a valid Rulex expression.
+      """
+      @impl Rulex.Encoding
+      def encode(maybe_expr) do
+        with true <- Rulex.Builder.expr?(maybe_expr) do
+          __encoder__().encode(maybe_expr)
+        else
+          false -> {:error, "cannot encode invalid expression"}
+        end
+      end
+
+      @doc """
+      Default implementation for `Rulex.Behaviour.encode!/1`.
+
+      Further more, this will return an error if the provider expression
+      is not a valid Rulex expression.
+      """
+      @impl Rulex.Encoding
+      def encode!(maybe_expr) do
+        case encode(maybe_expr) do
+          {:ok, encoder} ->
+            encoder
+
+          {:error, reason} ->
+            raise EncodeError, message: reason, given: maybe_expr
+        end
+      end
+
+      @doc """
+      Default implementation for `Rulex.Behaviour.decode/1`.
+
+      Further more, this will return an error if the provider expression
+      is not a valid Rulex expression.
+      """
+      @impl Rulex.Encoding
+      def decode(maybe_encoded_expr) do
+        with {:ok, maybe_expr} <- __encoder__().decode(maybe_encoded_expr),
+             true <- Rulex.Builder.expr?(maybe_expr) do
+          {:ok, atomize_reserved_operands(maybe_expr)}
+        else
+          false -> {:error, "decoded an invalid expression"}
+          reason -> reason
+        end
+      end
+
+      @impl Rulex.Encoding
+      def decode!(maybe_encoded_expr) do
+        case decode(maybe_encoded_expr) do
+          {:ok, encoder} ->
+            encoder
+
+          {:error, reason} ->
+            raise DecodeError, message: reason, raw: maybe_encoded_expr, decoder: __encoder__()
+        end
+      end
+
+      @spec __encoder__ :: module
+      def __encoder__, do: unquote(encoder)
+
+      defoverridable __encoder__: 0
+
+      #
+      # Private APIs
+      #
+
+      defp atomize_reserved_operands([op | exprs] = expr)
+           when Rulex.Guards.is_val_or_var(expr) do
+        op = Rulex.Operands.rename(op)
+
+        [op | exprs]
+      end
+
+      defp atomize_reserved_operands([op | exprs]) do
+        op = Rulex.Operands.rename(op)
+
+        exprs = Enum.map(exprs, &atomize_reserved_operands/1)
+
+        [op | exprs]
+      end
     end
   end
 end
 
 defmodule Rulex.Encoding.Json do
-  import Rulex.Builder, only: [expr?: 1]
-  import Rulex.Guards, only: [is_val_or_var: 1]
+  use Rulex.Encoding
 
-  alias Rulex.{EncodeError, DecodeError}
-
-  @behaviour Rulex.Encoding
-
-  # TODO: configurable encoding module (Jason vs whatever)
-
-  @impl Rulex.Encoding
-  def encode(maybe_expr) do
-    with true <- expr?(maybe_expr) do
-      encoder().encode(maybe_expr)
-    else
-      false -> {:error, "cannot encode invalid expression"}
-    end
-  end
-
-  @impl Rulex.Encoding
-  def encode!(maybe_expr) do
-    with true <- expr?(maybe_expr) do
-      encoder().encode!(maybe_expr)
-    else
-      false -> raise EncodeError, message: "cannot encode invalid expression", given: maybe_expr
-    end
-  end
-
-  @impl Rulex.Encoding
-  def decode(maybe_encoded_expr) do
-    with {:ok, maybe_expr} <- encoder().decode(maybe_encoded_expr),
-         true <- expr?(maybe_expr) do
-      {:ok, atomize_reserved_operands(maybe_expr)}
-    else
-      false -> {:error, "decoded an invalid expression"}
-      reason -> reason
-    end
-  end
-
-  @impl Rulex.Encoding
-  def decode!(maybe_encoded_expr) do
-    maybe_expr = encoder().decode!(maybe_encoded_expr)
-
-    if not expr?(maybe_expr) do
-      raise DecodeError,
-        message: "decoded an invalid expression",
-        raw: maybe_encoded_expr,
-        decoded: maybe_expr,
-        decoder: encoder()
-    end
-
-    atomize_reserved_operands(maybe_expr)
-  end
-
-  defp encoder, do: Application.get_env(:rulex, __MODULE__, encoder: Jason)[:encoder]
-
-  defp atomize_reserved_operands([op | exprs] = expr)
-       when is_val_or_var(expr) do
-    op = Rulex.Operands.rename(op)
-
-    [op | exprs]
-  end
-
-  defp atomize_reserved_operands([op | exprs]) do
-    op = Rulex.Operands.rename(op)
-
-    exprs = Enum.map(exprs, &atomize_reserved_operands/1)
-
-    [op | exprs]
-  end
+  def __encoder__, do: Application.get_env(:rulex, __MODULE__, encoder: Jason)[:encoder]
 end
