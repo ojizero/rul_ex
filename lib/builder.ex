@@ -20,7 +20,7 @@ defmodule Rulex.Builder do
       end
 
       def eval([:| | exprs], db) do
-        Enum.any?(exprs, Rulex.Builder.__expr_evaluator__(__MODULE__, db))
+        Enum.any?(exprs, &expr_evaluator(&1, db))
       catch
         reason -> {:error, reason}
       else
@@ -28,7 +28,7 @@ defmodule Rulex.Builder do
       end
 
       def eval([:& | exprs], db) do
-        Enum.all?(exprs, Rulex.Builder.__expr_evaluator__(__MODULE__, db))
+        Enum.all?(exprs, &expr_evaluator(&1, db))
       catch
         reason -> {:error, reason}
       else
@@ -128,12 +128,49 @@ defmodule Rulex.Builder do
 
       @doc "Default implementation for `Rulex.Behaviour.value/2`."
       @impl Rulex.Behaviour
-      def value(expr, db)
-          when is_val_or_var(expr),
-          do: Rulex.Builder.__evaluate_val_or_var__(expr, db)
+      def value([:val, type, value], _db) do
+        if valid_value?(type, value),
+          do: {:ok, value},
+          else: {:error, "invalid value '#{inspect(value)}' given for type '#{type}'"}
+      end
 
-      def value(expr, _db),
-        do: {:error, "cannot extract value with `#{elem(expr, 0)}` operand"}
+      def value([:var, type, variable], db) do
+        value = Rulex.DataBag.get(db, variable)
+
+        if not is_nil(value) and valid_value?(type, value),
+          do: {:ok, value},
+          else: {:error, "invalid value '#{inspect(value)}' given for type '#{type}'"}
+      end
+
+      def value([:var, type, variable, default], db) do
+        value = Rulex.DataBag.get(db, variable, default)
+
+        if not is_nil(value) and valid_value?(type, value),
+          do: {:ok, value},
+          else: {:error, "invalid value '#{inspect(value)}' given for type '#{type}'"}
+      end
+
+      def value([:val | args], _db) do
+        {
+          :error,
+          "invalid `val` arguments (`#{inspect(args)}`) provided can only accept two arguments (given as list of two elements) with the first one a supported type"
+        }
+      end
+
+      def value([:var | args], _db) do
+        {
+          :error,
+          "invalid `val` arguments (`#{inspect(args)}`) provided can only accept two or three arguments (given as list of two elements) with the first one a supported type"
+        }
+      end
+
+      def value(expr, _db) do
+        if expr?(expr) and not is_val_or_var(expr) do
+          {:error, "cannot get value for non `val` or `var` expression"}
+        else
+          {:error, "invalid `val` or `var` expression (`#{inspect(expr)}`) provided"}
+        end
+      end
 
       @doc "Default implementation for `Rulex.Behaviour.value!/2`."
       @impl Rulex.Behaviour
@@ -156,6 +193,34 @@ defmodule Rulex.Builder do
       def operand(op, args, db)
 
       defoverridable operand: 3
+
+      #
+      # Private defined APIs
+      #
+
+      defp expr_evaluator(expr, db) do
+        with true <- expr?(expr),
+             {:ok, result} <- eval(expr, db) do
+          result
+        else
+          false -> throw("non expressions provided")
+          {:error, reason} -> throw(reason)
+        end
+      end
+
+      defp valid_value?("any", _value), do: true
+      defp valid_value?("number", value), do: is_number(value)
+      defp valid_value?("integer", value), do: is_integer(value)
+      defp valid_value?("float", value), do: is_float(value)
+      defp valid_value?("string", value), do: is_binary(value)
+      defp valid_value?("boolean", value), do: is_boolean(value)
+      defp valid_value?("list", value), do: is_list(value)
+      defp valid_value?("map", value), do: is_map(value)
+      defp valid_value?("time", value), do: match?({:ok, _time}, Time.from_iso8601(value))
+      defp valid_value?("date", value), do: match?({:ok, _date}, Date.from_iso8601(value))
+
+      defp valid_value?("datetime", value),
+        do: match?({:ok, _datetime}, NaiveDateTime.from_iso8601(value))
     end
   end
 
@@ -167,6 +232,10 @@ defmodule Rulex.Builder do
     end
   end
 
+  # This is defined here as to be reused by other internal modules
+  # of Rulex, this isn't intended to be used externall for that
+  # use the `expr?/1` function provided by the implementor
+  # of Rulex behaviour.
   @doc false
   def expr?(expr) when is_val_or_var(expr), do: true
 
@@ -175,75 +244,4 @@ defmodule Rulex.Builder do
       do: Enum.all?(args, &expr?/1)
 
   def expr?(_invalid_expr), do: false
-
-  @doc false
-  defmacro __expr_evaluator__(mod, db) do
-    quote do
-      fn expr ->
-        with true <- unquote(mod).expr?(expr),
-             {:ok, result} <- unquote(mod).eval(expr, unquote(db)) do
-          result
-        else
-          false -> throw("non expressions provided")
-          {:error, reason} -> throw(reason)
-        end
-      end
-    end
-  end
-
-  @doc false
-  def __evaluate_val_or_var__([:val, type, value], _db) do
-    if valid_value?(type, value),
-      do: {:ok, value},
-      else: {:error, "invalid value '#{inspect(value)}' given for type '#{type}'"}
-  end
-
-  def __evaluate_val_or_var__([:var, type, variable], db) do
-    value = Rulex.DataBag.get(db, variable)
-
-    if not is_nil(value) and valid_value?(type, value),
-      do: {:ok, value},
-      else: {:error, "invalid value '#{inspect(value)}' given for type '#{type}'"}
-  end
-
-  def __evaluate_val_or_var__([:var, type, variable, default], db) do
-    value = Rulex.DataBag.get(db, variable, default)
-
-    if not is_nil(value) and valid_value?(type, value),
-      do: {:ok, value},
-      else: {:error, "invalid value '#{inspect(value)}' given for type '#{type}'"}
-  end
-
-  def __evaluate_val_or_var__([:val | args], _db) do
-    {
-      :error,
-      "invalid `val` arguments (`#{inspect(args)}`) provided can only accept two arguments (given as list of two elements) with the first one a supported type"
-    }
-  end
-
-  def __evaluate_val_or_var__([:var | args], _db) do
-    {
-      :error,
-      "invalid `val` arguments (`#{inspect(args)}`) provided can only accept two or three arguments (given as list of two elements) with the first one a supported type"
-    }
-  end
-
-  def __evaluate_val_or_var__(expr, _db),
-    do: {:error, "invalid `val` or `var` expression (`#{inspect(expr)}`) provided"}
-
-  defp valid_value?("any", _value), do: true
-  defp valid_value?("number", value), do: is_number(value)
-  defp valid_value?("integer", value), do: is_integer(value)
-  defp valid_value?("float", value), do: is_float(value)
-  defp valid_value?("string", value), do: is_binary(value)
-  defp valid_value?("boolean", value), do: is_boolean(value)
-  defp valid_value?("list", value), do: is_list(value)
-  defp valid_value?("map", value), do: is_map(value)
-  defp valid_value?("time", value), do: match?({:ok, _time}, Time.from_iso8601(value))
-  defp valid_value?("date", value), do: match?({:ok, _date}, Date.from_iso8601(value))
-
-  defp valid_value?("datetime", value),
-    do: match?({:ok, _datetime}, NaiveDateTime.from_iso8601(value))
-
-  defp valid_value?(_unknown, _value), do: false
 end
