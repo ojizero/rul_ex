@@ -68,7 +68,7 @@ defmodule Rulex.Encoding do
       @doc """
       Default implementation for `Rulex.Encoding.encode/1`.
 
-      Further more, this will return an error if the provider expression
+      Further more, this will return an error if the provided expression
       is not a valid Rulex expression.
       """
       @impl Rulex.Encoding
@@ -83,7 +83,7 @@ defmodule Rulex.Encoding do
       @doc """
       Default implementation for `Rulex.Encoding.encode!/1`.
 
-      Further more, this will return an error if the provider expression
+      Further more, this will return an error if the provided expression
       is not a valid Rulex expression.
       """
       @impl Rulex.Encoding
@@ -100,7 +100,7 @@ defmodule Rulex.Encoding do
       @doc """
       Default implementation for `Rulex.Encoding.decode/1`.
 
-      Further more, this will return an error if the provider expression
+      Further more, this will return an error if the provided expression
       is not a valid Rulex expression.
       """
       @impl Rulex.Encoding
@@ -117,7 +117,7 @@ defmodule Rulex.Encoding do
       @doc """
       Default implementation for `Rulex.Encoding.decode!/1`.
 
-      Further more, this will return an error if the provider expression
+      Further more, this will return an error if the provided expression
       is not a valid Rulex expression.
       """
       @impl Rulex.Encoding

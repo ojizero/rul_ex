@@ -11,7 +11,20 @@ defmodule Rulex.Builder do
       @behaviour Rulex.Behaviour
       @before_compile Rulex.Builder
 
-      @doc "Default implementation for `Rulex.Behaviour.eval/2`."
+      @doc """
+      Default implementation for `Rulex.Behaviour.eval/2`.
+
+      ## Examples
+
+          iex> import #{__MODULE__}
+          iex> # Success cases
+          iex> truthy_expression = [:=, [:val, "string", "hello"], [:var, "string", "what?"]]
+          iex> falsy_expression = [:=, [:val, "string", "hello"], [:val, "string", "world"]]
+          iex> {:ok, true} = eval(truthy_expression, %{"what?" => "hello"})
+          iex> {:ok, false} = eval(falsy_expression, %{"what?" => "hello"})
+          iex> invalid_expression = []
+          iex> {:error, _reason} = eval(invalid_expression, %{})
+      """
       @impl Rulex.Behaviour
       def eval(expr, db)
           when is_val_or_var(expr) do
@@ -122,11 +135,35 @@ defmodule Rulex.Builder do
         end
       end
 
-      @doc "Default implementation for `Rulex.Behaviour.expr?/1`."
-      @impl Rulex.Behaviour
-      defdelegate expr?(expr), to: Rulex.Builder
+      @doc """
+      Default implementation for `Rulex.Behaviour.expr?/1`.
 
-      @doc "Default implementation for `Rulex.Behaviour.value/2`."
+      ## Examples
+
+          iex> import #{__MODULE__}
+          iex> correct_expression = [:=, [:val, "string", "hello"], [:var, "string", "what?"]]
+          iex> incorrect_expression = []
+          iex> true = expr?(correct_expression)
+          iex> false = expr?(incorrect_expression)
+      """
+      @impl Rulex.Behaviour
+      def expr?(expr), do: Rulex.Builder.expr?(expr)
+
+      @doc """
+      Default implementation for `Rulex.Behaviour.value/2`.
+
+      ## Examples
+
+          iex> import #{__MODULE__}
+          iex> # Success cases
+          iex> val_expression = [:val, "string", "foo"]
+          iex> var_expression = [:var, "number", "x"]
+          iex> {:ok, "foo"} = value(val_expression, %{})
+          iex> {:ok, 10} = value(var_expression, %{"x" => 10})
+          iex> # Error cases
+          iex> {:error, _reason} = value(var_expression, %{})
+          iex> {:error, _reason} = value([], %{})
+      """
       @impl Rulex.Behaviour
       def value([:val, type, value], _db) do
         if valid_value?(type, value),
@@ -188,7 +225,15 @@ defmodule Rulex.Builder do
         end
       end
 
-      @doc "Default implementation for `Rulex.Behaviour.operand/3`."
+      @doc """
+      Default implementation for `Rulex.Behaviour.operand/3`. If not overridden this will always
+      yield an error. No catchall clause is needed as it is already implemented.
+
+      ## Examples
+
+          iex> import #{__MODULE__}
+          iex> {:error, _reason} = operand("whatever", "any value", %{})
+      """
       @impl Rulex.Behaviour
       def operand(op, args, db)
 
@@ -228,6 +273,7 @@ defmodule Rulex.Builder do
   defmacro __before_compile__(_env) do
     quote do
       # Catchall operand call to reject with an error any undefined operands
+      # TODO: add dialyzer ignore clause if this never matches
       def operand(op, _args, _db), do: {:error, "unsupported operand '#{op}' provided"}
     end
   end
