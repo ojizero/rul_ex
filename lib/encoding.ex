@@ -10,13 +10,23 @@ defmodule Rulex.Encoding do
 
   ## Usage
 
-  A custom Rulex encoding mechanism can be defined by simply using `Rulex.Encoding`
+  A custom Rulex encoding mechanism can be defined by simply using `Rulex.Encoding`,
+  and passing a module defining your encode and decode functions
+
+      defmodule MyApp.Rulex.Encoder do
+        use Rulex.Encoding, encoder: CustomModule
+      end
+
+  Alternatively the internal encoder can be passed as an option when using `Rulex.Encoding`
 
       defmodule MyApp.Rulex.Encoder do
         use Rulex.Encoding
 
         def __encoder__, do: CustomModule
       end
+
+  Using this module to build your encoder is useful as the generated encoder would do
+  validation on the Rulex expressions being encoded or decoded by it.
   """
 
   @doc """
