@@ -285,6 +285,19 @@ defmodule Rulex.Builder do
   @doc false
   def expr?(expr) when is_val_or_var(expr), do: true
 
+  def expr?([op]) when op in [:!, "!"], do: false
+  def expr?([op, arg]) when op in [:!, "!"], do: expr?(arg)
+  def expr?([op | _args]) when op in [:!, "!"], do: false
+  def expr?([op | _args] = expr) when op in [:val, :var, "val", "var"], do: is_val_or_var(expr)
+
+  def expr?([op | args])
+      when op in [:>, :>=, :<, :<=, :=, ">", ">=", "<", "<=", "="] and length(args) == 2,
+      do: Enum.all?(args, &expr?/1)
+
+  def expr?([op | _args])
+      when op in [:>, :>=, :<, :<=, :=, ">", ">=", "<", "<=", "="],
+      do: false
+
   def expr?([op | args])
       when is_valid_operand(op) and is_list(args),
       do: Enum.all?(args, &expr?/1)

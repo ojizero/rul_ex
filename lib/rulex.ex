@@ -40,5 +40,3 @@ defmodule Rulex do
 
   use Rulex.Behaviour
 end
-
-# [:|,[:>, [:val, "number", 10], [:var, "number", "x"]],[:=, [:val, "any", 10], [:var, "any", "x"]]]
