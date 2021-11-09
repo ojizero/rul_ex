@@ -29,7 +29,7 @@ defmodule Rulex.Builder do
       def eval(expr, db)
           when is_val_or_var(expr) do
         with {:ok, value} <- value(expr, db),
-             do: is_truthy(value)
+             do: {:ok, is_truthy(value)}
       end
 
       def eval([:| | exprs], db) do
@@ -48,15 +48,14 @@ defmodule Rulex.Builder do
         result -> {:ok, result}
       end
 
-      def eval([op, expr0, expr1], db)
-          when op in [:<, :<=, :>, :>=, :=, :!=] and
-                 is_val_or_var(expr0) and
-                 is_val_or_var(expr1) do
+      def eval([op, expr0, expr1] = expr, db)
+          when is_comparison(expr) do
         with t0 = Enum.at(expr0, 1),
              t1 = Enum.at(expr1, 1),
              true <- t0 == t1,
              {:ok, v0} <- value(expr0, db),
              {:ok, v1} <- value(expr1, db) do
+          # FIXME: this breaks for dates, times, and datetimes
           op =
             case op do
               :< -> &Kernel.</2
@@ -69,7 +68,7 @@ defmodule Rulex.Builder do
 
           {:ok, op.(v0, v1)}
         else
-          false -> {:error, "type mismatch in `<` operand"}
+          false -> {:error, "type mismatch in `#{op}` operand"}
           reason -> reason
         end
       end
@@ -167,7 +166,7 @@ defmodule Rulex.Builder do
       @impl Rulex.Behaviour
       def value([:val, type, value], _db) do
         if valid_value?(type, value),
-          do: {:ok, value},
+          do: {:ok, maybe_parse!(type, value)},
           else: {:error, "invalid value '#{inspect(value)}' given for type '#{type}'"}
       end
 
@@ -175,7 +174,7 @@ defmodule Rulex.Builder do
         value = Rulex.DataBag.get(db, variable)
 
         if not is_nil(value) and valid_value?(type, value),
-          do: {:ok, value},
+          do: {:ok, maybe_parse!(type, value)},
           else: {:error, "invalid value '#{inspect(value)}' given for type '#{type}'"}
       end
 
@@ -183,7 +182,7 @@ defmodule Rulex.Builder do
         value = Rulex.DataBag.get(db, variable, default)
 
         if not is_nil(value) and valid_value?(type, value),
-          do: {:ok, value},
+          do: {:ok, maybe_parse!(type, value)},
           else: {:error, "invalid value '#{inspect(value)}' given for type '#{type}'"}
       end
 
@@ -261,11 +260,23 @@ defmodule Rulex.Builder do
       defp valid_value?("boolean", value), do: is_boolean(value)
       defp valid_value?("list", value), do: is_list(value)
       defp valid_value?("map", value), do: is_map(value)
+      defp valid_value?("time", %Time{} = _value), do: true
       defp valid_value?("time", value), do: match?({:ok, _time}, Time.from_iso8601(value))
+      defp valid_value?("date", %Date{} = _value), do: true
       defp valid_value?("date", value), do: match?({:ok, _date}, Date.from_iso8601(value))
+      defp valid_value?("datetime", %NaiveDateTime{} = _value), do: true
+      defp valid_value?("datetime", %DateTime{} = _value), do: true
 
       defp valid_value?("datetime", value),
         do: match?({:ok, _datetime}, NaiveDateTime.from_iso8601(value))
+
+      defp maybe_parse!("time", value) when is_binary(value), do: Time.from_iso8601!(value)
+      defp maybe_parse!("date", value) when is_binary(value), do: Date.from_iso8601!(value)
+
+      defp maybe_parse!("datetime", value) when is_binary(value),
+        do: NaiveDateTime.from_iso8601!(value)
+
+      defp maybe_parse!(_type, value), do: value
     end
   end
 
@@ -291,11 +302,11 @@ defmodule Rulex.Builder do
   def expr?([op | _args] = expr) when op in [:val, :var, "val", "var"], do: is_val_or_var(expr)
 
   def expr?([op | args])
-      when op in [:>, :>=, :<, :<=, :=, ">", ">=", "<", "<=", "="] and length(args) == 2,
+      when is_comparison_operand(op) and length(args) == 2,
       do: Enum.all?(args, &expr?/1)
 
   def expr?([op | _args])
-      when op in [:>, :>=, :<, :<=, :=, ">", ">=", "<", "<=", "="],
+      when is_comparison_operand(op),
       do: false
 
   def expr?([op | args])

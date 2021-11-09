@@ -20,7 +20,8 @@ defmodule Rulex do
           # Data related operands
           | :val
           | :var
-          # Any custom user defined operands, anything before this is reserved by Rulex
+          # Any custom user defined operands, everything define before this
+          # as well as their equivalent in string are al reserved by Rulex.
           | String.t()
 
   @typedoc """

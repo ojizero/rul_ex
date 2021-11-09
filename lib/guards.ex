@@ -1,24 +1,38 @@
 defmodule Rulex.Guards do
   @moduledoc "Provide helper guards for use with Rulex."
 
+  @value_operands Rulex.Operands.value()
+  @variable_operands Rulex.Operands.variable()
+  @comparison_operands Rulex.Operands.comparison()
   @reserved_operands Rulex.Operands.reserved()
 
   @doc "Yield true if given expression is a valid `val` expression, false otherwise."
   defguard is_val(expr)
            when is_list(expr) and
                   length(expr) == 3 and
-                  hd(expr) in [:val, "val"] and
+                  hd(expr) in @value_operands and
                   expr |> tl |> hd |> is_binary()
 
   @doc "Yield true if given expression is a valid `var` expression, false otherwise."
   defguard is_var(expr)
            when is_list(expr) and
                   length(expr) in [3, 4] and
-                  hd(expr) in [:var, "var"] and
+                  hd(expr) in @variable_operands and
                   expr |> tl |> hd |> is_binary()
 
   @doc "Yield true if given expression is a valid `val` or `var` expression, false otherwise."
   defguard is_val_or_var(expr) when is_val(expr) or is_var(expr)
+
+  @doc "Yield true if given operand is a valid comparison operand, false otherwise."
+  defguard is_comparison_operand(op) when op in @comparison_operands
+
+  @doc "Yield true if given expression is a valid comparison expression, false otherwise."
+  defguard is_comparison(expr)
+           when is_list(expr) and
+                  length(expr) == 3 and
+                  expr |> hd |> is_comparison_operand() and
+                  expr |> tl |> hd |> is_val_or_var() and
+                  expr |> tl |> tl |> hd |> is_val_or_var()
 
   @doc "Yield true if given operand is reserved by Rulex, false otherwise."
   defguard is_reserved_operand(op)
