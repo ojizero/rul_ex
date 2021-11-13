@@ -55,13 +55,12 @@ defmodule Rulex.Builder do
              true <- t0 == t1,
              {:ok, v0} <- value(expr0, db),
              {:ok, v1} <- value(expr1, db) do
-          # FIXME: this breaks for dates, times, and datetimes
           op =
             case op do
-              :< -> &Kernel.</2
-              :<= -> &Kernel.<=/2
-              :> -> &Kernel.>/2
-              :>= -> &Kernel.>=/2
+              :< -> &less_than(t0, &1, &2)
+              :<= -> &less_than_or_equal(t0, &1, &2)
+              :> -> &greater_than(t0, &1, &2)
+              :>= -> &greater_than_or_equal(t0, &1, &2)
               := -> &Kernel.==/2
               :!= -> &Kernel.!=/2
             end
@@ -260,16 +259,29 @@ defmodule Rulex.Builder do
       defp valid_value?("boolean", value), do: is_boolean(value)
       defp valid_value?("list", value), do: is_list(value)
       defp valid_value?("map", value), do: is_map(value)
+
+      # We allow for time, date, and datetime data to be passed as either
+      # structs of their respective types or as ISO 8601 formatted
+      # strings indicating for Rulex that it needs to parse them.
       defp valid_value?("time", %Time{} = _value), do: true
-      defp valid_value?("time", value), do: match?({:ok, _time}, Time.from_iso8601(value))
+
+      defp valid_value?("time", value) when is_binary(value),
+        do: match?({:ok, _time}, Time.from_iso8601(value))
+
       defp valid_value?("date", %Date{} = _value), do: true
-      defp valid_value?("date", value), do: match?({:ok, _date}, Date.from_iso8601(value))
+
+      defp valid_value?("date", value) when is_binary(value),
+        do: match?({:ok, _date}, Date.from_iso8601(value))
+
       defp valid_value?("datetime", %NaiveDateTime{} = _value), do: true
       defp valid_value?("datetime", %DateTime{} = _value), do: true
 
-      defp valid_value?("datetime", value),
+      defp valid_value?("datetime", value) when is_binary(value),
         do: match?({:ok, _datetime}, NaiveDateTime.from_iso8601(value))
 
+      # We allow for time, date, and datetime data types to be passed as
+      # ISO 8601 formatted strings, those are automatically parsed
+      # when being evaluated.
       defp maybe_parse!("time", value) when is_binary(value), do: Time.from_iso8601!(value)
       defp maybe_parse!("date", value) when is_binary(value), do: Date.from_iso8601!(value)
 
@@ -277,6 +289,26 @@ defmodule Rulex.Builder do
         do: NaiveDateTime.from_iso8601!(value)
 
       defp maybe_parse!(_type, value), do: value
+
+      defp less_than("time", t0, t1), do: Time.compare(t0, t1) == :lt
+      defp less_than("date", t0, t1), do: Date.compare(t0, t1) == :lt
+      defp less_than("datetime", t0, t1), do: DateTime.compare(t0, t1) == :lt
+      defp less_than(_type, t0, t1), do: t0 < t1
+
+      defp less_than_or_equal("time", t0, t1), do: Time.compare(t0, t1) in [:lt, :eq]
+      defp less_than_or_equal("date", t0, t1), do: Date.compare(t0, t1) in [:lt, :eq]
+      defp less_than_or_equal("datetime", t0, t1), do: DateTime.compare(t0, t1) in [:lt, :eq]
+      defp less_than_or_equal(_type, t0, t1), do: t0 <= t1
+
+      defp greater_than("time", t0, t1), do: Time.compare(t0, t1) == :gt
+      defp greater_than("date", t0, t1), do: Date.compare(t0, t1) == :gt
+      defp greater_than("datetime", t0, t1), do: DateTime.compare(t0, t1) == :gt
+      defp greater_than(_type, t0, t1), do: t0 > t1
+
+      defp greater_than_or_equal("time", t0, t1), do: Time.compare(t0, t1) in [:gt, :eq]
+      defp greater_than_or_equal("date", t0, t1), do: Date.compare(t0, t1) in [:gt, :eq]
+      defp greater_than_or_equal("datetime", t0, t1), do: DateTime.compare(t0, t1) in [:gt, :eq]
+      defp greater_than_or_equal(_type, t0, t1), do: t0 >= t1
     end
   end
 

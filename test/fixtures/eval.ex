@@ -97,10 +97,100 @@ defmodule Rulex.Fixtures.Eval do
   def invalid_expressions do
     [
       %{
+        expr: 10,
+        db: %{},
+        expected: {:error, "invalid expression given"},
+        message: "rejects non valid expression `10`"
+      },
+      %{
         expr: [],
         db: %{},
         expected: {:error, "invalid expression given"},
         message: "rejects empty list as an expression"
+      },
+      %{
+        expr: [:var],
+        db: %{},
+        expected: {:error, "invalid expression given"},
+        message: "rejects incomplete `var` expression"
+      },
+      %{
+        expr: [:val],
+        db: %{},
+        expected: {:error, "invalid expression given"},
+        message: "rejects incomplete `val` expression"
+      },
+      %{
+        expr: [:val, "any"],
+        db: %{},
+        expected: {:error, "invalid expression given"},
+        message: "rejects incomplete `val` expression"
+      },
+      %{
+        expr: [:val, "any", "value", "extra"],
+        db: %{},
+        expected: {:error, "invalid expression given"},
+        message: "rejects incorrect `val` expression"
+      },
+      %{
+        expr: [:var, "any", "value", "default", "extra"],
+        db: %{},
+        expected: {:error, "invalid expression given"},
+        message: "rejects incorrect `var` expression"
+      },
+      %{
+        expr: [:>],
+        db: %{},
+        expected: {:error, nil},
+        message: "rejects empty list as an expression"
+      },
+      %{
+        expr: [:>, 10],
+        db: %{},
+        expected: {:error, nil},
+        message: "rejects empty list as an expression"
+      },
+      %{
+        expr: [:>, 10, 20, 30],
+        db: %{},
+        expected: {:error, nil},
+        message: "rejects empty list as an expression"
+      },
+      %{
+        expr: [:=, 10, 20, 30],
+        db: %{},
+        expected: {:error, nil},
+        message: "rejects empty list as an expression"
+      },
+      %{
+        expr: [:=, 10],
+        db: %{},
+        expected: {:error, nil},
+        message: "rejects empty list as an expression"
+      },
+      %{
+        expr: [:!],
+        db: %{},
+        expected: {:error, nil},
+        message: "rejects incomplete `!` expression"
+      },
+      %{
+        expr: [:!, 10],
+        db: %{},
+        expected: {:error, "invalid expression given"},
+        message: "rejects incorrect `!` expression"
+      },
+      %{
+        expr: [:&, 10, 20],
+        db: %{},
+        expected: {:error, "non expressions provided"},
+        message: "rejects incorrect `&` expression"
+      },
+      %{
+        expr: [:|, 10, 20],
+        db: %{},
+        expected: {:error, "non expressions provided"},
+        message: "rejects incorrect `|` expression"
       }
     ]
   end

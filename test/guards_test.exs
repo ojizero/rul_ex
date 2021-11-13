@@ -114,8 +114,8 @@ defmodule Ruelx.GuardsTest do
   end
 
   test "is_truthy/1" do
-    assert not is_truthy(nil)
-    assert not is_truthy(false)
+    refute is_truthy(nil)
+    refute is_truthy(false)
     assert is_truthy(0)
     assert is_truthy(10)
     assert is_truthy("string")
@@ -126,10 +126,10 @@ defmodule Ruelx.GuardsTest do
   test "is_falsy/1" do
     assert is_falsy(nil)
     assert is_falsy(false)
-    assert not is_falsy(0)
-    assert not is_falsy(10)
-    assert not is_falsy("string")
-    assert not is_falsy([])
-    assert not is_falsy(%{})
+    refute is_falsy(0)
+    refute is_falsy(10)
+    refute is_falsy("string")
+    refute is_falsy([])
+    refute is_falsy(%{})
   end
 end
