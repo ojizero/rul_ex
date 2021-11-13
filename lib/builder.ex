@@ -1,18 +1,18 @@
-defmodule Rulex.Builder do
+defmodule RulEx.Builder do
   @moduledoc false
 
-  import Rulex.Guards
+  import RulEx.Guards
 
   @doc false
   defmacro __using__(_opts) do
     quote do
-      import Rulex.Guards
+      import RulEx.Guards
 
-      @behaviour Rulex.Behaviour
-      @before_compile Rulex.Builder
+      @behaviour RulEx.Behaviour
+      @before_compile RulEx.Builder
 
       @doc """
-      Default implementation for `Rulex.Behaviour.eval/2`.
+      Default implementation for `RulEx.Behaviour.eval/2`.
 
       ## Examples
 
@@ -25,7 +25,7 @@ defmodule Rulex.Builder do
           iex> invalid_expression = []
           iex> {:error, _reason} = eval(invalid_expression, %{})
       """
-      @impl Rulex.Behaviour
+      @impl RulEx.Behaviour
       def eval(expr, db)
           when is_val_or_var(expr) do
         with {:ok, value} <- value(expr, db),
@@ -118,15 +118,15 @@ defmodule Rulex.Builder do
 
       def eval(_invalid_expr, _db), do: {:error, "invalid expression given"}
 
-      @doc "Default implementation for `Rulex.Behaviour.eval!/2`."
-      @impl Rulex.Behaviour
+      @doc "Default implementation for `RulEx.Behaviour.eval!/2`."
+      @impl RulEx.Behaviour
       def eval!(expr, db) do
         case eval(expr, db) do
           {:ok, evaluation} ->
             evaluation
 
           {:error, reason} ->
-            raise Rulex.EvalError,
+            raise RulEx.EvalError,
               message: "failed to evaluate expression `#{inspect(expr)}`",
               reason: reason,
               facts: db,
@@ -135,7 +135,7 @@ defmodule Rulex.Builder do
       end
 
       @doc """
-      Default implementation for `Rulex.Behaviour.expr?/1`.
+      Default implementation for `RulEx.Behaviour.expr?/1`.
 
       ## Examples
 
@@ -145,11 +145,11 @@ defmodule Rulex.Builder do
           iex> true = expr?(correct_expression)
           iex> false = expr?(incorrect_expression)
       """
-      @impl Rulex.Behaviour
-      def expr?(expr), do: Rulex.Builder.expr?(expr)
+      @impl RulEx.Behaviour
+      def expr?(expr), do: RulEx.Builder.expr?(expr)
 
       @doc """
-      Default implementation for `Rulex.Behaviour.value/2`.
+      Default implementation for `RulEx.Behaviour.value/2`.
 
       ## Examples
 
@@ -163,7 +163,7 @@ defmodule Rulex.Builder do
           iex> {:error, _reason} = value(var_expression, %{})
           iex> {:error, _reason} = value([], %{})
       """
-      @impl Rulex.Behaviour
+      @impl RulEx.Behaviour
       def value([:val, type, value], _db) do
         if valid_value?(type, value),
           do: {:ok, maybe_parse!(type, value)},
@@ -171,7 +171,7 @@ defmodule Rulex.Builder do
       end
 
       def value([:var, type, variable], db) do
-        value = Rulex.DataBag.get(db, variable)
+        value = RulEx.DataBag.get(db, variable)
 
         if not is_nil(value) and valid_value?(type, value),
           do: {:ok, maybe_parse!(type, value)},
@@ -179,7 +179,7 @@ defmodule Rulex.Builder do
       end
 
       def value([:var, type, variable, default], db) do
-        value = Rulex.DataBag.get(db, variable, default)
+        value = RulEx.DataBag.get(db, variable, default)
 
         if not is_nil(value) and valid_value?(type, value),
           do: {:ok, maybe_parse!(type, value)},
@@ -208,15 +208,15 @@ defmodule Rulex.Builder do
         end
       end
 
-      @doc "Default implementation for `Rulex.Behaviour.value!/2`."
-      @impl Rulex.Behaviour
+      @doc "Default implementation for `RulEx.Behaviour.value!/2`."
+      @impl RulEx.Behaviour
       def value!(expr, db) do
         case value(expr, db) do
           {:ok, result} ->
             result
 
           {:error, reason} ->
-            raise Rulex.EvalError,
+            raise RulEx.EvalError,
               message: "failed to evaluate value expression `#{inspect(expr)}`",
               reason: reason,
               facts: db,
@@ -225,7 +225,7 @@ defmodule Rulex.Builder do
       end
 
       @doc """
-      Default implementation for `Rulex.Behaviour.operand/3`. If not overridden this will always
+      Default implementation for `RulEx.Behaviour.operand/3`. If not overridden this will always
       yield an error. No catchall clause is needed as it is already implemented.
 
       ## Examples
@@ -233,7 +233,7 @@ defmodule Rulex.Builder do
           iex> import #{__MODULE__}
           iex> {:error, _reason} = operand("whatever", "any value", %{})
       """
-      @impl Rulex.Behaviour
+      @impl RulEx.Behaviour
       def operand(op, args, db)
 
       defoverridable operand: 3
@@ -263,7 +263,7 @@ defmodule Rulex.Builder do
 
       # We allow for time, date, and datetime data to be passed as either
       # structs of their respective types or as ISO 8601 formatted
-      # strings indicating for Rulex that it needs to parse them.
+      # strings indicating for RulEx that it needs to parse them.
       defp valid_value?("time", %Time{} = _value), do: true
 
       defp valid_value?("time", value) when is_binary(value),
@@ -323,9 +323,9 @@ defmodule Rulex.Builder do
   end
 
   # This is defined here as to be reused by other internal modules
-  # of Rulex, this isn't intended to be used externall for that
+  # of RulEx, this isn't intended to be used externall for that
   # use the `expr?/1` function provided by the implementor
-  # of Rulex behaviour.
+  # of RulEx behaviour.
   @doc false
   def expr?(expr) when is_val_or_var(expr), do: true
 

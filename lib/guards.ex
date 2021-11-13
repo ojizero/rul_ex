@@ -1,10 +1,10 @@
-defmodule Rulex.Guards do
-  @moduledoc "Provide helper guards for use with Rulex."
+defmodule RulEx.Guards do
+  @moduledoc "Provide helper guards for use with RulEx."
 
-  @value_operands Rulex.Operands.value()
-  @variable_operands Rulex.Operands.variable()
-  @comparison_operands Rulex.Operands.comparison()
-  @reserved_operands Rulex.Operands.reserved()
+  @value_operands RulEx.Operands.value()
+  @variable_operands RulEx.Operands.variable()
+  @comparison_operands RulEx.Operands.comparison()
+  @reserved_operands RulEx.Operands.reserved()
 
   @doc "Yield true if given expression is a valid `val` expression, false otherwise."
   defguard is_val(expr)
@@ -34,7 +34,7 @@ defmodule Rulex.Guards do
                   expr |> tl |> hd |> is_val_or_var() and
                   expr |> tl |> tl |> hd |> is_val_or_var()
 
-  @doc "Yield true if given operand is reserved by Rulex, false otherwise."
+  @doc "Yield true if given operand is reserved by RulEx, false otherwise."
   defguard is_reserved_operand(op)
            when op in @reserved_operands
 

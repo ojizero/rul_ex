@@ -1,7 +1,7 @@
-defmodule Rulex.Encoding.JsonTest do
+defmodule RulEx.Encoding.JsonTest do
   use ExUnit.Case, async: true
 
-  import Rulex.Encoding.Json
+  import RulEx.Encoding.Json
 
   @valid_fixtures [
     {
@@ -83,7 +83,7 @@ defmodule Rulex.Encoding.JsonTest do
     ~S(["&", 10, 20])
   ]
 
-  describe "Rulex.Encoding.Json.encode/1" do
+  describe "RulEx.Encoding.Json.encode/1" do
     test "success cases" do
       for {tc, expected} <- @valid_fixtures do
         assert {:ok, ^expected} = encode(tc)
@@ -97,7 +97,7 @@ defmodule Rulex.Encoding.JsonTest do
     end
   end
 
-  describe "Rulex.Encoding.Json.encode!/1" do
+  describe "RulEx.Encoding.Json.encode!/1" do
     test "success cases" do
       for {tc, expected} <- @valid_fixtures do
         assert ^expected = encode!(tc)
@@ -106,12 +106,12 @@ defmodule Rulex.Encoding.JsonTest do
 
     test "error cases" do
       for tc <- @invalid_expressions do
-        assert_raise Rulex.EncodeError, fn -> encode!(tc) end
+        assert_raise RulEx.EncodeError, fn -> encode!(tc) end
       end
     end
   end
 
-  describe "Rulex.Encoding.Json.decode/1" do
+  describe "RulEx.Encoding.Json.decode/1" do
     test "success cases" do
       for {expected, tc} <- @valid_fixtures do
         assert {:ok, ^expected} = decode(tc)
@@ -125,7 +125,7 @@ defmodule Rulex.Encoding.JsonTest do
     end
   end
 
-  describe "Rulex.Encoding.Json.decode!/1" do
+  describe "RulEx.Encoding.Json.decode!/1" do
     test "success cases" do
       for {expected, tc} <- @valid_fixtures do
         assert ^expected = decode!(tc)
@@ -134,7 +134,7 @@ defmodule Rulex.Encoding.JsonTest do
 
     test "error cases" do
       for tc <- @invalid_encoded_expressions do
-        assert_raise Rulex.DecodeError, fn -> decode!(tc) end
+        assert_raise RulEx.DecodeError, fn -> decode!(tc) end
       end
     end
   end

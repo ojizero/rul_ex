@@ -1,5 +1,5 @@
-defmodule Rulex.Fixtures.CustomRulex do
-  use Rulex.Behaviour
+defmodule RulEx.Fixtures.CustomRulEx do
+  use RulEx.Behaviour
 
   def operand("passthru", [expr], db) when is_val(expr) do
     with {:ok, value} <- value(expr, db), do: {:ok, is_truthy(value)}
@@ -72,7 +72,7 @@ defmodule Rulex.Fixtures.CustomRulex do
         db: %{},
         expected: {:ok, true},
         message:
-          "note rulex is lazy in evaluation so if in a nested expression an error may not be evaluated"
+          "note rul_ex is lazy in evaluation so if in a nested expression an error may not be evaluated"
       },
       %{
         expr: [
@@ -93,7 +93,7 @@ defmodule Rulex.Fixtures.CustomRulex do
         db: %{},
         expected: {:ok, false},
         message:
-          "note rulex is lazy in evaluation so if in a nested expression an error may not be evaluated"
+          "note rul_ex is lazy in evaluation so if in a nested expression an error may not be evaluated"
       },
       %{
         expr: [:|, ["error"], ["passthru", [:val, "boolean", true]]],

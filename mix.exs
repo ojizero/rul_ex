@@ -1,21 +1,25 @@
-defmodule Rulex.MixProject do
+defmodule RulEx.MixProject do
   use Mix.Project
+
+  @scm_url "https://github.com/ojizero/rulex"
 
   def project do
     [
-      app: :rulex,
+      app: :rul_ex,
       version: "1.0.0",
       elixir: "~> 1.11",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       elixirc_paths: elixirc_paths(Mix.env()),
-      name: "Rulex",
-      source_url: "https://github.com/ojizero/rulex",
-      homepage_url: "https://github.com/ojizero/rulex",
+      name: "RulEx",
+      source_url: @scm_url,
+      homepage_url: @scm_url,
       docs: [
         main: "README",
         extras: ["README.md"]
-      ]
+      ],
+      description: "A simple to use, simple to extend rules engine, written in Elixir.",
+      package: package()
     ]
   end
 
@@ -34,4 +38,14 @@ defmodule Rulex.MixProject do
 
   defp elixirc_paths(:test), do: ["lib", "test/fixtures"]
   defp elixirc_paths(_else), do: ["lib"]
+
+  defp package do
+    [
+      maintainers: ["Ameer A."],
+      licenses: ["MIT"],
+      links: %{
+        "GitHub" => @scm_url
+      }
+    ]
+  end
 end

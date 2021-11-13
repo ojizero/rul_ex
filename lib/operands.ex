@@ -1,4 +1,4 @@
-defmodule Rulex.Operands do
+defmodule RulEx.Operands do
   @moduledoc false
 
   @comparison_atoms [:=, :!=, :<, :>, :<=, :>=]

@@ -1,7 +1,7 @@
 defmodule Ruelx.GuardsTest do
   use ExUnit.Case, async: false
 
-  import Rulex.Guards
+  import RulEx.Guards
 
   test "is_val/1" do
     cases = [
@@ -80,14 +80,14 @@ defmodule Ruelx.GuardsTest do
   end
 
   test "is_reserved_operand/1" do
-    for reserved_operand <- Rulex.Operands.reserved() do
+    for reserved_operand <- RulEx.Operands.reserved() do
       assert is_reserved_operand(reserved_operand),
              "failed on operand #{inspect(reserved_operand)}"
     end
   end
 
   test "is_valid_operand/1" do
-    for reserved_operand <- Rulex.Operands.reserved() do
+    for reserved_operand <- RulEx.Operands.reserved() do
       assert is_valid_operand(reserved_operand),
              "failed on reserved operand #{inspect(reserved_operand)}"
     end

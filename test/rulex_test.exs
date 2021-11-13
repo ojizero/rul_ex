@@ -1,10 +1,10 @@
-defmodule RulexTest do
+defmodule RulExTest do
   use ExUnit.Case, async: true
-  doctest Rulex
+  doctest RulEx
 
-  import Rulex
+  import RulEx
 
-  alias Rulex.Fixtures.{Eval, Value}
+  alias RulEx.Fixtures.{Eval, Value}
 
   test "eval/2" do
     for %{expr: tc, db: db, expected: expected, message: message} <- Eval.test_cases() do
@@ -19,7 +19,7 @@ defmodule RulexTest do
     for %{expr: tc, db: db, expected: expected, message: message} <- Eval.test_cases() do
       case expected do
         {:ok, expected} -> assert expected == eval!(tc, db), message
-        {:error, _reason} -> assert_raise Rulex.EvalError, fn -> eval!(tc, db) end
+        {:error, _reason} -> assert_raise RulEx.EvalError, fn -> eval!(tc, db) end
       end
     end
   end
@@ -44,7 +44,7 @@ defmodule RulexTest do
     for %{expr: tc, db: db, expected: expected, message: message} <- Value.test_cases() do
       case expected do
         {:ok, expected} -> assert expected == value!(tc, db), message
-        {:error, _reason} -> assert_raise Rulex.EvalError, fn -> value!(tc, db) end
+        {:error, _reason} -> assert_raise RulEx.EvalError, fn -> value!(tc, db) end
       end
     end
   end

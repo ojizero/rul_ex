@@ -1,4 +1,4 @@
-defmodule Rulex.Fixtures.Value do
+defmodule RulEx.Fixtures.Value do
   def test_cases do
     [
       %{

@@ -1,28 +1,28 @@
-defmodule Rulex.EvalError do
+defmodule RulEx.EvalError do
   @moduledoc """
-  An error risen if the given Rulex expression fails to evaluate
+  An error risen if the given RulEx expression fails to evaluate
   for any reason when using the bang variant functions of
-  the `Rulex.Behaviour` callbacks.
+  the `RulEx.Behaviour` callbacks.
   """
 
   defexception [:message, :reason, :expr, :facts]
 end
 
-defmodule Rulex.EncodeError do
+defmodule RulEx.EncodeError do
   @moduledoc """
-  An error risen if the given Rulex expression fails to be encoded
+  An error risen if the given RulEx expression fails to be encoded
   for any reason when using the bang variant functions of
-  the `Rulex.Encoding` callbacks.
+  the `RulEx.Encoding` callbacks.
   """
 
   defexception [:message, :given]
 end
 
-defmodule Rulex.DecodeError do
+defmodule RulEx.DecodeError do
   @moduledoc """
-  An error risen if the given encoded Rulex expression fails to be
+  An error risen if the given encoded RulEx expression fails to be
   decoded for any reason when using the bang variant functions
-  of the `Rulex.Encoding` callbacks.
+  of the `RulEx.Encoding` callbacks.
   """
 
   defexception [:message, :raw, :decoder]

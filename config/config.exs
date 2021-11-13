@@ -1,4 +1,4 @@
 use Mix.Config
 
-config :rulex, Rulex.Encoding, default: Rulex.Encoding.Json
-config :rulex, Rulex.Encoding.Json, encoder: Jason
+config :rul_ex, RulEx.Encoding, default: RulEx.Encoding.Json
+config :rul_ex, RulEx.Encoding.Json, encoder: Jason

@@ -1,4 +1,4 @@
-defmodule Rulex.Fixtures.Eval do
+defmodule RulEx.Fixtures.Eval do
   def test_cases, do: valid_expressions() ++ invalid_expressions() ++ value_expressions()
 
   def valid_expressions do
@@ -313,7 +313,7 @@ defmodule Rulex.Fixtures.Eval do
   end
 
   defp comparison_operands_type_mismatch do
-    Enum.flat_map(Rulex.Operands.comparison(), fn op ->
+    Enum.flat_map(RulEx.Operands.comparison(), fn op ->
       [
         %{
           expr: [op, [:val, "string", 10], [:val, "number", 9]],
