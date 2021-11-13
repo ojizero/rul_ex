@@ -15,7 +15,7 @@ defmodule RulEx.MixProject do
       source_url: @scm_url,
       homepage_url: @scm_url,
       docs: [
-        main: "README",
+        main: "readme",
         extras: ["README.md"]
       ],
       description: "A simple to use, simple to extend rules engine, written in Elixir.",
