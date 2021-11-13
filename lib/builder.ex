@@ -112,8 +112,9 @@ defmodule Rulex.Builder do
           do: eval([String.to_existing_atom(op) | args], db)
 
       def eval([op | args], db)
-          when not is_reserved_operand(op),
-          do: operand(op, args, db)
+          when not is_reserved_operand(op) do
+        with {:ok, result} <- operand(op, args, db), do: {:ok, is_truthy(result)}
+      end
 
       def eval(_invalid_expr, _db), do: {:error, "invalid expression given"}
 

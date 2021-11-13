@@ -4,11 +4,18 @@ defmodule Rulex.MixProject do
   def project do
     [
       app: :rulex,
-      version: "0.1.0",
+      version: "1.0.0",
       elixir: "~> 1.11",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
-      elixirc_paths: elixirc_paths(Mix.env())
+      elixirc_paths: elixirc_paths(Mix.env()),
+      name: "Rulex",
+      source_url: "https://github.com/ojizero/rulex",
+      homepage_url: "https://github.com/ojizero/rulex",
+      docs: [
+        main: "README",
+        extras: ["README.md"]
+      ]
     ]
   end
 
@@ -20,7 +27,8 @@ defmodule Rulex.MixProject do
 
   defp deps do
     [
-      {:jason, "~> 1.2", optional: true}
+      {:jason, "~> 1.2", optional: true},
+      {:ex_doc, "~> 0.24", only: :dev, runtime: false}
     ]
   end
 
